@@ -16,10 +16,10 @@ oses:
   additional_packages << host_param('additional-packages')
   additional_packages << python_package if ansible_enabled
   additional_packages << 'salt-minion' if salt_enabled
-  additional_packages = additional_packages.join(" ").split().unig().join(" ")
+  additional_packages = additional_packages.join(" ").split().uniq().join(" ")
 %>
 # Locale
-d-i debian-innstaller/locale strig <%= host_param('lang') || 'en_US' %>
+d-i debian-installer/locale string <%= host_param('lang') || 'en_US' %>
 # country and keyboard settings are automatic. Keep them ...
 # ... for wheezy and newer:
 d-i keyboard-configuration/xkb-keymap seen true
@@ -82,7 +82,7 @@ d-i clock-setup/ntp-server string <%= host_param('ntp-server') || '0.debian.pool
 
 <%= @host.diskLayout %>
 
-<%= if host_param('preseed-kernel-image') -%>
+<% if host_param('preseed-kernel-image') -%>
 # Install different kernel
 d-i base-installer/kernel/image string <%= host_param('preseed-kernel-image') %>
 <% end %>
@@ -98,8 +98,8 @@ user-setup-udeb passwd/make-user boolean false
 <% @additional_media.each do |medium| -%>
 d-i apt-setup/local<%= repos %>/repository string <%= medium[:url] %> <%= @host.operatingsystem.release_name %>-<%= medium[:name] %> main
 <%= "d-i apt-setup/local#{repos}/comment string #{medium[:comment]}" if medium[:comment] %>
-<%= "d-i apt-setup/local#{repos}/key string #{medium[:ggkey]}" if medium[:gpgkey] %>
-<% repos += 1 -%>
+<%= "d-i apt-setup/local#{repos}/key string #{medium[:gpgkey]}" if medium[:gpgkey] %>
+<% repos +=1 -%>
 <% end -%>
 
 <% if salt_enabled -%>
@@ -119,15 +119,15 @@ d-i apt-setup/local<%= repos %>/key string http://debian.saltstack.com/debian-sa
 d-i apt-setup/services-select multiselect
 
 <% end -%>
-# Install minimal task set /see tasksel --task-packages minimal)
+# Install minimal task set (see tasksel --task-packages minimal)
 tasksel tasksel/first multiselect minimal, ssh-server, openssh-server
 
 # Install some base packages
 d-i pkgsel/include string <%= additional_packages %>
 d-i pkgsel/update-policy select <%= host_param('preseed-update-policy') || 'unattended-upgrades' %>
-d-i pkgsel/upgrade selec <%= host_param('preseed-post-install-upgrade') || 'none' %>
+d-i pkgsel/upgrade select <%= host_param('preseed-post-install-upgrade') || 'none' %>
 
-popularitiy-contest popularitiy-contest/participate boolean false
+popularity-contest popularity-contest/participate boolean false
 
 # Boot loader settings
 #grub-pc grub-pc/hidden_timeout boolean false
@@ -136,5 +136,4 @@ d-i grub-installer/only_debian boolean true
 d-i grub-installer/with_other_os boolean true
 d-i finish-install/reboot_in_progress note
 
-d-i preseed/late_command string wget -Y off <%= @static ? "'#{foreman_url('finish', static: 'true')}'" : foreman_url('finish') %> -0 /target/tmp/finish.sh && in-target chmod +x /tmp/finish.sh && in-target
-/tmp/finish.sh
+d-i preseed/late_command string wget -Y off <%= @static ? "'#{foreman_url('finish', static: 'true')}'" : foreman_url('finish') %> -O /target/tmp/finish.sh && in-target chmod +x /tmp/finish.sh && in-target /tmp/finish.sh
