@@ -4,7 +4,6 @@ name: aPreseed Proxmox LVM
 model: Ptable
 oses:
 - Debian
-- Ubuntu
 %>
 <%
   partitioning_method = host_param('partitioning-method') ? host_param('partitioning-method') : 'lvm'
