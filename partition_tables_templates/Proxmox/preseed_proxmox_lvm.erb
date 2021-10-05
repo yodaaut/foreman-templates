@@ -7,10 +7,10 @@ oses:
 %>
 <%
   partitioning_method = host_param('partitioning-method') ? host_param('partitioning-method') : 'lvm'
-  partitioning_recipe = host_param('partitioning-recipe') ? host_param('partitioning-recipe') : 'multi'
+  partitioning_recipe = host_param('partitioning-recipe') ? host_param('partitioning-recipe') : 'proxmox'
   partitioning_expert_recipe = host_param('partitioning-expert-recipe') ? host_param('partitioning-expert-recipe') : ''
-  vg_name = host_param('partitioning-vg-name') ? host_param('partitioning-vg-name') : 'vg00'
-  partitioning_filesystem = host_param('partitioning-filesystem') ? host_param('partitioning-filesystem') : ''
+  vg_name = host_param('partitioning-vg-name') ? host_param('partitioning-vg-name') : 'pve'
+  partitioning_filesystem = host_param('partitioning-filesystem') ? host_param('partitioning-filesystem') : 'xfs'
   partitioning_crypto_erase = host_param('partitioning-crypto-erase') ? host_param('partitioning-crypto-erase') : 'false'
   partitioning_crypto_password = host_param('partitioning-crypto-password') ? host_param('partitioning-crypto-password') : 'temporarypassword'
   partitioning_crypto_password_weak = host_param('partitioning-crypto-password-weak') ? host_param('partitioning-crypto-password-weak') : 'false'
@@ -44,7 +44,7 @@ d-i partman-lvm/confirm_nooverwrite boolean true
 <% if partitioning_method == 'lvm' or partitioning_method == 'crypto' -%>
   # For LVM partitioning, you can select how much of the volume group to use
   # for logical volumes.
-  d-i partman-auto-lvm/guided_size string max
+  d-i partman-auto-lvm/guided_size string 100%
   <% if partitioning_method == 'crypto' -%>
     d-i partman-crypto/erase_data boolean <%= partitioning_crypto_erase %>
     d-i partman-crypto/passphrase password <%= partitioning_crypto_password %>
@@ -57,33 +57,67 @@ d-i partman-lvm/confirm_nooverwrite boolean true
 <% end -%>
 
 <% if host_param_true?('partitioning-allow-noswap') -%>
-  d-i partman-basicfilesystems/no_swap boolean false
+  d-i partman-basicfilesystems/no_swap boolean true
 <% end -%>
 
+#TODO
 <% if host_param('partitioning-disk-label') -%>
-d-i partman-partitioning/choose_label string <%= host_param('partitioning-disk-label') %>
-d-i partman-partitioning/default_label string <%= host_param('partitioning-disk-label') %>
+  d-i partman-partitioning/choose_label string <%= host_param('partitioning-disk-label') %>
+  d-i partman-partitioning/default_label string <%= host_param('partitioning-disk-label') %>
 <% end -%>
 
 # You can choose one of the three predefined partitioning recipes:
 # - atomic: all files in one partition
 # - home:   separate /home partition
 # - multi:  separate /home, /var, and /tmp partitions (/usr was removed in jessie)
+# - proxmox: (default) separate /root, /data (LVM)
 d-i partman-auto/choose_recipe select <%= partitioning_recipe %>
 
 <% if partitioning_expert_recipe != '' -%>
-# Or provide a recipe of your own...
-# If you have a way to get a recipe file into the d-i environment, you can
-# just point at it.
-d-i partman-auto/expert_recipe string \
-<%= partitioning_expert_recipe.gsub(/(?:\n\r?|\r\n?)/, " \\\n") %>
-
+  # Or provide a recipe of your own...
+  # If you have a way to get a recipe file into the d-i environment, you can
+  # just point at it.
+  d-i partman-auto/expert_recipe string \
+  <%= partitioning_expert_recipe.gsub(/(?:\n\r?|\r\n?)/, " \\\n") %>
+<% else -%>
+  d-i partman-auto/expert_recipe string     \
+    proxmox ::                              \
+      1 1 1 free                            \
+        $iflabel{ gpt }                     \
+        method{ biosgrub }                  \
+      .                                     \
+      512 10 512 efi                        \
+        $gptonly{ }                         \
+        $primary{ }                         \
+        method{ efi } format{ }             \
+        mountpoint{ /boot/efi }             \
+      .                                     \
+      20480 20 20480 <%= partitioning_filesystem %>                    \
+        $defaultignore{ }                   \
+        method{ format } format{ }          \
+        $lvmok{ }                           \
+        lv_name{ root }                     \
+        use_filesystem{ } filesystem{ <%= partitioning_filesystem %> } \
+        mountpoint{ / }                     \
+      .                                     \
+    <% if host_param_false?('partitioning-allow-noswap') -%>
+      2048 30 2048 linux-swap               \
+        method{ swap } format{ }            \
+        $lvmok{ }                           \
+        lv_name{ swap }                     \
+      .                                     \
+    <% end -%>
+      2048 40 -1 free                       \
+        $defaultignore{ }                   \
+        $lvmok{ }                           \
+        lv_name{ data }                     \
+      .
 <% end -%>
 
 # If you just want to change the default filesystem to something
 # else, you can do that without providing a full recipe.
 <% if partitioning_filesystem != '' -%>
-d-i partman/default_filesystem string <%= partitioning_filesystem %>
+  d-i partman/default_filesystem string <%= partitioning_filesystem %>
 <% end -%>
 
 # This makes partman automatically partition without confirmation, provided
@@ -93,9 +127,12 @@ d-i partman/choose_partition select finish
 d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 
+# Ignore missing /boot partition
+d-i partman-auto-lvm/no_boot boolean true
 <% if @host.pxe_loader_efi? -%>
 # Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 d-i partman-efi/non_efi_system boolean true
+
 # Ensure the partition table is GPT - this is required for EFI
 d-i partman-partitioning/choose_label string gpt
 d-i partman-partitioning/default_label string gpt
