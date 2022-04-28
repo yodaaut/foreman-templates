@@ -18,6 +18,8 @@ oses:
   additional_packages << 'salt-minion' if salt_enabled
   additional_packages = additional_packages.join(" ").split().uniq().join(" ")
 %>
+#TODO
+d-i auto-install/enable boolean false
 # Locale
 d-i debian-installer/locale string <%= host_param('lang') || 'en_US' %>
 # country and keyboard settings are automatic. Keep them ...
@@ -33,17 +35,17 @@ d-i keyboard-configuration/xkb-keymap seen true
   <%- dhcp = subnet.dhcp_boot_mode? -%>
 <% end -%>
 <% unless dhcp -%>
-# Static network configuration.
-d-i preseed/early_command string /bin/killall.sh; /bin/netcfg
-d-i netcfg/disable_autoconfig boolean true
-d-i netcfg/dhcp_failed note
-d-i netcfg/dhcp_options select Configure network manually
-d-i netcfg/disable_dhcp boolean true
-d-i netcfg/get_ipaddress string <%= @host.ip %>
-d-i netcfg/get_netmask string <%= subnet.mask %>
-d-i netcfg/get_nameservers string <%= subnet.dns_servers.join(' ') %>
-d-i netcfg/get_gateway string <%= subnet.gateway %>
-d-i netcfg/confirm_static boolean true
+  # Static network configuration.
+  d-i preseed/early_command string /bin/killall.sh; /bin/netcfg
+  d-i netcfg/disable_autoconfig boolean true
+  d-i netcfg/dhcp_failed note
+  d-i netcfg/dhcp_options select Configure network manually
+  d-i netcfg/disable_dhcp boolean true
+  d-i netcfg/get_ipaddress string <%= @host.ip %>
+  d-i netcfg/get_netmask string <%= subnet.mask %>
+  d-i netcfg/get_nameservers string <%= subnet.dns_servers.join(' ') %>
+  d-i netcfg/get_gateway string <%= subnet.gateway %>
+  d-i netcfg/confirm_static boolean true
 <% end -%>
 
 # Network configuration
@@ -55,8 +57,8 @@ d-i netcfg/wireless_wep string
 d-i hw-detect/load_firmware boolean true
 
 <% if host_param_true?('preseed-live-installer') -%>
-# Offline live-installer location
-d-i live-installer/net-image string http://<%= @preseed_server %><%= @preseed_path %>/install/filesystem.squashfs
+  # Offline live-installer location
+  d-i live-installer/net-image string http://<%= @preseed_server %><%= @preseed_path %>/install/filesystem.squashfs
 <% end -%>
 
 # Mirror settings
@@ -83,8 +85,8 @@ d-i clock-setup/ntp-server string <%= host_param('ntp-server') || '0.debian.pool
 <%= @host.diskLayout %>
 
 <% if host_param('preseed-kernel-image') -%>
-# Install different kernel
-d-i base-installer/kernel/image string <%= host_param('preseed-kernel-image') %>
+  # Install different kernel
+  d-i base-installer/kernel/image string <%= host_param('preseed-kernel-image') %>
 <% end %>
 
 # User settings
@@ -96,28 +98,27 @@ user-setup-udeb passwd/make-user boolean false
 <% repos = 0 %>
 
 <% @additional_media.each do |medium| -%>
-d-i apt-setup/local<%= repos %>/repository string <%= medium[:url] %> <%= @host.operatingsystem.release_name %>-<%= medium[:name] %> main
-<%= "d-i apt-setup/local#{repos}/comment string #{medium[:comment]}" if medium[:comment] %>
-<%= "d-i apt-setup/local#{repos}/key string #{medium[:gpgkey]}" if medium[:gpgkey] %>
-<% repos +=1 -%>
+  d-i apt-setup/local<%= repos %>/repository string <%= medium[:url] %> <%= @host.operatingsystem.release_name %>-<%= medium[:name] %> main
+  <%= "d-i apt-setup/local#{repos}/comment string #{medium[:comment]}" if medium[:comment] %>
+  <%= "d-i apt-setup/local#{repos}/key string #{medium[:gpgkey]}" if medium[:gpgkey] %>
+  <% repos +=1 -%>
 <% end -%>
 
 <% if salt_enabled -%>
-<% if host_param_true?('enable-saltstack-repo') -%>
-d-i apt-setup/local<%= repos %>/repository string http://debian.saltstack.com/debian <%= @host.operatingsystem.release_name %>-saltstack main
-d-i apt-setup/local<%= repos %>/comment string SaltStack Repository
-d-i apt-setup/local<%= repos %>/key string http://debian.saltstack.com/debian-salt-team-joehealy.gpg.key
-<% repos += 1 -%>
-<% end -%>
+  <% if host_param_true?('enable-saltstack-repo') -%>
+    d-i apt-setup/local<%= repos %>/repository string http://debian.saltstack.com/debian <%= @host.operatingsystem.release_name %>-saltstack main
+    d-i apt-setup/local<%= repos %>/comment string SaltStack Repository
+    d-i apt-setup/local<%= repos %>/key string http://debian.saltstack.com/debian-salt-team-joehealy.gpg.key
+    <% repos += 1 -%>
+  <% end -%>
 <% end -%>
 
 
 <% if host_param('kt_activation_keys') -%>
-# If we are using Katello for content management, then do not add updates and
-# security repos during the initial installation. Prevents us from defaulting to:
-# d-i apt-setup/services-select multiselect updates,security
-d-i apt-setup/services-select multiselect
-
+  # If we are using Katello for content management, then do not add updates and
+  # security repos during the initial installation. Prevents us from defaulting to:
+  # d-i apt-setup/services-select multiselect updates,security
+  d-i apt-setup/services-select multiselect
 <% end -%>
 # Install minimal task set (see tasksel --task-packages minimal)
 tasksel tasksel/first multiselect minimal, ssh-server, openssh-server
