@@ -54,7 +54,10 @@ d-i netcfg/get_hostname string <%= @host %>
 d-i netcfg/get_domain string <%= @host.domain %>
 d-i netcfg/wireless_wep string
 
-d-i hw-detect/load_firmware boolean true
+# doesn't work, add the following to boot line
+# hw-detect/load_firmware=false
+# see https://bugs.launchpad.net/ubuntu/+source/hw-detect/+bug/1004690
+#d-i hw-detect/load_firmware boolean false
 
 <% if host_param_true?('preseed-live-installer') -%>
   # Offline live-installer location

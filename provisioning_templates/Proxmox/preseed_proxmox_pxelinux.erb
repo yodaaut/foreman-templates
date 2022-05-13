@@ -31,6 +31,7 @@ oses:
     options << "netcfg/use_vlan=true netcfg/vlan_id=#{@host.provision_interface.vlanid}"
   end
   options << "locale=#{host_param('lang') || 'en_US'}"
+  options << "hw-detect/load_firmware=false"
   options = options.join(' ')
 -%>
 
