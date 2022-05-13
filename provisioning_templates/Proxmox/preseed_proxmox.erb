@@ -135,6 +135,12 @@ d-i pkgsel/upgrade select <%= host_param('preseed-post-install-upgrade') || 'non
 # select "most" for generic or "dep" for targeted
 d-i base-installer/initramfs-tools/driver-policy select dep
 
+# Post install APT setup
+d-i apt-setup/non-free boolean true
+d-i apt-setup/enable-source-repositories boolean false
+d-i apt-setup/services-select multiselect security
+d-i apt-setup/security-updates boolean true
+
 popularity-contest popularity-contest/participate boolean false
 
 # Boot loader settings
