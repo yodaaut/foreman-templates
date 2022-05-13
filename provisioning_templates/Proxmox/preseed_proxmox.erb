@@ -131,6 +131,10 @@ d-i pkgsel/include string <%= additional_packages %>
 d-i pkgsel/update-policy select <%= host_param('preseed-update-policy') || 'unattended-upgrades' %>
 d-i pkgsel/upgrade select <%= host_param('preseed-post-install-upgrade') || 'none' %>
 
+# Drivers to include in the initrd
+# select "most" for generic or "dep" for targeted
+d-i base-installer/initramfs-tools/driver-policy select dep
+
 popularity-contest popularity-contest/participate boolean false
 
 # Boot loader settings
