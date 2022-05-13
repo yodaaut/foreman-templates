@@ -146,6 +146,8 @@ popularity-contest popularity-contest/participate boolean false
 # Boot loader settings
 #grub-pc grub-pc/hidden_timeout boolean false
 #grub-pc grub-pc/timeout string 10
+# Don't force GRUB installation to the EFI removable media path
+d-i grub-installer/force-efi-extra-removable boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/with_other_os boolean true
 d-i finish-install/reboot_in_progress note
