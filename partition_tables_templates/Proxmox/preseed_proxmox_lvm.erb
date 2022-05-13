@@ -137,8 +137,8 @@ d-i partman-auto-lvm/no_boot boolean true
 <% if @host.pxe_loader_efi? -%>
 # Force UEFI booting ('BIOS compatibility' will be lost). Default: false.
 d-i partman-efi/non_efi_system boolean true
+<% end -%>
 
 # Ensure the partition table is GPT - this is required for EFI
 d-i partman-partitioning/choose_label string gpt
 d-i partman-partitioning/default_label string gpt
-<% end -%>
