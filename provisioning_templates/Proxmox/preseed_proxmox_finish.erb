@@ -27,9 +27,13 @@ description: |
 /bin/sed -i "s/^search.*$/search <%= @host.domain %>/g" /etc/resolv.conf
 /bin/sed -i "s/.*dns-search.*/\tdns-search <%= @host.domain %>/g" /etc/network/interfaces
 /bin/sed -i "s/^<%= @host.ip %>.*/<%= @host.ip %>\t<%= @host.shortname %>.<%= @host.domain %>\t<%= @host.shortname %>/g" /etc/hosts
+<% end -%>
+
+<% unless !(@host.operatingsystem.name == 'PVE' || @host.operatingsystem.name == 'Debian') || dhcp -%>
 /bin/echo <%= @host.shortname %> > /etc/hostname
 /bin/hostname  <%= @host.shortname %>.<%= @host.domain %>
 <% end -%>
+/bin/echo -e "<%= host_param('ansible_tower_ip') -%>\t<%= host_param('ansible_tower_fqdn') -%>" >> /etc/hosts
 
 <% if @host.provision_method == 'image' && root_pass.present? -%>
 # Install the root password
@@ -61,7 +65,7 @@ echo 'root:<%= root_pass -%>' | /usr/sbin/chpasswd -e
 <% end -%>
 
 <%= snippet 'preseed_networking_setup' -%>
-<%= snippet 'ansible_provisioning_callback' -%>
+<%= snippet 'proxmox_ansible_provisioning_callback' -%>
 <%= snippet 'efibootmgr_netboot' -%>
 <%= snippet 'eject_cdrom' -%>
 <%= snippet 'built' -%>

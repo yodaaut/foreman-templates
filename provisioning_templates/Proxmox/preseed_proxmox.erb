@@ -8,6 +8,7 @@ oses:
 <%
   proxy_string = host_param('http-proxy') ? " http://#{host_param('http-proxy')}:#{host_param('http-proxy-port')}" : ''
   ansible_enabled = plugin_present?('foreman_ansible')
+  ansible_tower_enabled = host_param('ansible_tower_provisioning') ? true : false
   salt_enabled = host_param('salt_master') ? true : false
   os_major = @host.operatingsystem.major.to_i
   python_package = 'python3'
@@ -15,6 +16,7 @@ oses:
   additional_packages = ['lsb-release', 'wget']
   additional_packages << host_param('additional-packages')
   additional_packages << python_package if ansible_enabled
+  additional_packages << 'curl' if ansible_tower_enabled
   additional_packages << 'salt-minion' if salt_enabled
   additional_packages = additional_packages.join(" ").split().uniq().join(" ")
 %>
