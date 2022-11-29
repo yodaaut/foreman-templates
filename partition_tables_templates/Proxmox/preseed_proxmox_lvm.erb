@@ -115,7 +115,7 @@ d-i partman-auto/choose_recipe select <%= partitioning_recipe %>
       2048 40 -1 free                       \
         $defaultignore{ }                   \
         $lvmok{ }                           \
-        lv_name{ data }                     \
+        lv_name{ pve_convert_to_thin }      \
       .
 <% end -%>
 
